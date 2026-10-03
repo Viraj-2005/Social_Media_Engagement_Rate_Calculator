@@ -19,49 +19,68 @@
 
     /* ---------- chart initialization ---------- */
     function initCharts() {
-        if (!window.EngageCharts || !window.Chart) return;
+        if (!window.Chart) {
+            console.error('[EngageRate] Chart.js not loaded. Check CDN connection.');
+            return;
+        }
+        if (!window.EngageCharts) {
+            console.error('[EngageRate] EngageCharts not loaded. Check charts.js loaded.');
+            return;
+        }
+        console.log('[EngageRate] Initializing charts...', { chartCount: document.querySelectorAll('canvas[data-chart]').length });
         window.EngageCharts.destroyAll();
         var EC = window.EngageCharts;
         var t = EC.themeColors();
 
-        document.querySelectorAll('canvas[data-chart]').forEach(function (canvas) {
-            var type = canvas.getAttribute('data-chart');
-            var source = canvas.getAttribute('data-source');
-            var raw = readJSON(source);
-            if (!raw) return;
+        document.querySelectorAll('canvas[data-chart]').forEach(function (canvas, idx) {
+            try {
+                var type = canvas.getAttribute('data-chart');
+                var source = canvas.getAttribute('data-source');
+                var raw = readJSON(source);
+                if (!raw) {
+                    console.warn('[EngageRate] No data for canvas:', canvas.id);
+                    return;
+                }
 
-            var payload;
-            if (canvas.getAttribute('data-derive') === 'videos') {
-                var sets = EC.videosToChartSets(raw);
-                if (type === 'bar') payload = sets.bar;
-                else if (type === 'scatter') payload = sets.scatter;
-                else if (type === 'line') payload = sets.line;
-                else if (type === 'composition') payload = sets.composition;
-            } else {
-                payload = raw;
+                var payload;
+                if (canvas.getAttribute('data-derive') === 'videos') {
+                    var sets = EC.videosToChartSets(raw);
+                    if (type === 'bar') payload = sets.bar;
+                    else if (type === 'scatter') payload = sets.scatter;
+                    else if (type === 'line') payload = sets.line;
+                    else if (type === 'composition') payload = sets.composition;
+                } else {
+                    payload = raw;
+                }
+
+                // Determine emptiness
+                var arr = Array.isArray(payload) ? payload : (payload && payload.data);
+                var empty = !Array.isArray(arr) || arr.length === 0;
+
+                var shell = canvas.parentElement;
+                var emptyId = canvas.getAttribute('data-empty');
+                var emptyEl = emptyId ? document.getElementById(emptyId) : null;
+
+                if (empty) {
+                    if (shell) shell.style.display = 'none';
+                    if (emptyEl) emptyEl.hidden = false;
+                    console.log('[EngageRate] Canvas empty, hiding:', canvas.id);
+                    return;
+                }
+                if (shell) shell.style.display = '';
+                if (emptyEl) emptyEl.hidden = true;
+
+                console.log('[EngageRate] Rendering chart:', canvas.id, 'type:', type, 'data points:', Array.isArray(arr) ? arr.length : 'object');
+                if (type === 'bar') EC.engagementBar(canvas, payload, t);
+                else if (type === 'scatter') EC.viewsScatter(canvas, payload, t);
+                else if (type === 'composition') EC.composition(canvas, payload, t);
+                else if (type === 'line') EC.trend(canvas, payload, t);
+                else console.warn('[EngageRate] Unknown chart type:', type);
+            } catch (e) {
+                console.error('[EngageRate] Error rendering chart', canvas.id, e);
             }
-
-            // Determine emptiness
-            var arr = Array.isArray(payload) ? payload : (payload && payload.data);
-            var empty = !Array.isArray(arr) || arr.length === 0;
-
-            var shell = canvas.parentElement;
-            var emptyId = canvas.getAttribute('data-empty');
-            var emptyEl = emptyId ? document.getElementById(emptyId) : null;
-
-            if (empty) {
-                if (shell) shell.style.display = 'none';
-                if (emptyEl) emptyEl.hidden = false;
-                return;
-            }
-            if (shell) shell.style.display = '';
-            if (emptyEl) emptyEl.hidden = true;
-
-            if (type === 'bar') EC.engagementBar(canvas, payload, t);
-            else if (type === 'scatter') EC.viewsScatter(canvas, payload, t);
-            else if (type === 'composition') EC.composition(canvas, payload, t);
-            else if (type === 'line') EC.trend(canvas, payload, t);
         });
+        console.log('[EngageRate] Charts initialized');
     }
 
     /* ---------- theme ---------- */

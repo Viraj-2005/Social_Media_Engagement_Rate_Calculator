@@ -141,7 +141,26 @@
                 animation: { duration: 450, easing: 'easeOutQuart' },
                 plugins: {
                     legend: { display: false },
-                    tooltip: tooltipBase(t)
+                    tooltip: Object.assign(tooltipBase(t), {
+                        callbacks: {
+                            title: function (ctx) {
+                                var tip = (d.tooltips || [])[ctx[0].dataIndex];
+                                return tip ? tip.title : '';
+                            },
+                            label: function (ctx) {
+                                var tip = (d.tooltips || [])[ctx[0].dataIndex];
+                                if (!tip) return '';
+                                var total = num(tip.likes) + num(tip.comments);
+                                return [
+                                    'Engagement rate:  ' + fmtPct(tip.engagement_rate),
+                                    'Views:  ' + fmtFull(tip.views),
+                                    'Likes:  ' + fmtFull(tip.likes),
+                                    'Comments:  ' + fmtFull(tip.comments),
+                                    'Total engagement:  ' + fmtFull(total)
+                                ];
+                            }
+                        }
+                    })
                 },
                 scales: {
                     x: {
@@ -159,24 +178,6 @@
                 interaction: { mode: 'index', intersect: false }
             }
         }));
-        chart.options.plugins.tooltip.callbacks = {
-            title: function (ctx) {
-                var tip = (d.tooltips || [])[ctx[0].dataIndex];
-                return tip ? tip.title : '';
-            },
-            label: function (ctx) {
-                var tip = (d.tooltips || [])[ctx.dataIndex];
-                if (!tip) return '';
-                var total = num(tip.likes) + num(tip.comments);
-                return [
-                    'Engagement rate:  ' + fmtPct(tip.engagement_rate),
-                    'Views:  ' + fmtFull(tip.views),
-                    'Likes:  ' + fmtFull(tip.likes),
-                    'Comments:  ' + fmtFull(tip.comments),
-                    'Total engagement:  ' + fmtFull(total)
-                ];
-            }
-        };
         return chart;
     }
 
@@ -271,7 +272,23 @@
                 animation: { duration: 450, easing: 'easeOutQuart' },
                 plugins: {
                     legend: { display: false },
-                    tooltip: tooltipBase(t)
+                    tooltip: Object.assign(tooltipBase(t), {
+                        callbacks: {
+                            title: function (ctx) {
+                                var p = points[ctx[0].dataIndex];
+                                return p ? (p.title || p.label || 'Video') : '';
+                            },
+                            label: function (ctx) {
+                                var p = points[ctx[0].dataIndex];
+                                if (!p) return '';
+                                var rows = ['Views:  ' + fmtFull(p.views != null ? p.views : p.x)];
+                                if (p.likes != null) rows.push('Likes:  ' + fmtFull(p.likes));
+                                if (p.comments != null) rows.push('Comments:  ' + fmtFull(p.comments));
+                                rows.push('Engagement rate:  ' + fmtPct(p.engagement_rate != null ? p.engagement_rate : ctx.raw.y));
+                                return rows;
+                            }
+                        }
+                    })
                 },
                 scales: {
                     x: {
@@ -291,23 +308,9 @@
                 interaction: { mode: 'nearest', intersect: false }
             }
         }));
-        chart.options.plugins.tooltip.callbacks = {
-            title: function (ctx) {
-                var p = points[ctx[0].dataIndex];
-                return p ? (p.title || p.label || 'Video') : '';
-            },
-            label: function (ctx) {
-                var p = points[ctx.dataIndex];
-                if (!p) return '';
-                var rows = ['Views:  ' + fmtFull(p.views != null ? p.views : p.x)];
-                if (p.likes != null) rows.push('Likes:  ' + fmtFull(p.likes));
-                if (p.comments != null) rows.push('Comments:  ' + fmtFull(p.comments));
-                rows.push('Engagement rate:  ' + fmtPct(p.engagement_rate != null ? p.engagement_rate : ctx.raw.y));
-                return rows;
-            }
-        };
         return chart;
     }
+                if (p.comments != null) rows.push('Comments:  ' + fmtFull(p.comments));
 
     /* ============================================================
        4. Engagement Trend — line chart over publication dates
@@ -343,7 +346,23 @@
                 animation: { duration: 450, easing: 'easeOutQuart' },
                 plugins: {
                     legend: { display: false },
-                    tooltip: tooltipBase(t)
+                    tooltip: Object.assign(tooltipBase(t), {
+                        callbacks: {
+                            title: function (ctx) {
+                                var tip = (d.tooltips || [])[ctx[0].dataIndex];
+                                return tip ? tip.title : '';
+                            },
+                            label: function (ctx) {
+                                var tip = (d.tooltips || [])[ctx[0].dataIndex];
+                                if (!tip) return '';
+                                return [
+                                    fmtLongDate(tip.published_date),
+                                    'Engagement rate:  ' + fmtPct(tip.engagement_rate),
+                                    'Views:  ' + fmtFull(tip.views)
+                                ];
+                            }
+                        }
+                    })
                 },
                 scales: {
                     x: {
@@ -361,21 +380,6 @@
                 interaction: { mode: 'index', intersect: false }
             }
         }));
-        chart.options.plugins.tooltip.callbacks = {
-            title: function (ctx) {
-                var tip = (d.tooltips || [])[ctx[0].dataIndex];
-                return tip ? tip.title : '';
-            },
-            label: function (ctx) {
-                var tip = (d.tooltips || [])[ctx.dataIndex];
-                if (!tip) return '';
-                return [
-                    fmtLongDate(tip.published_date),
-                    'Engagement rate:  ' + fmtPct(tip.engagement_rate),
-                    'Views:  ' + fmtFull(tip.views)
-                ];
-            }
-        };
         return chart;
     }
 
