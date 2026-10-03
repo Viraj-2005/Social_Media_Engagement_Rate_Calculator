@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ video.title|truncatechars:50 }} - Video Analysis{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container { position: relative; height: 320px; }
+    .metric-card {
+        background: var(--bg-tertiary);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        text-align: center;
+        transition: var(--transition);
+    }
+    .metric-card:hover {
+        background: rgba(79, 70, 229, 0.05);
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="animate-in">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'analytics:dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'analytics:history' %}">History</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ video.title|truncatechars:40 }}</li>
+    </ol>
+</nav>
+
+<!-- Video Header -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-8 animate-in">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="fw-bold mb-3">{{ video.title }}</h2>
+                <div class="d-flex flex-wrap gap-4 text-muted mb-3">
+                    <span class="d-flex align-items-center gap-1">
+                        <i class="bi bi-person-circle"></i>
+                        <a href="{% url 'analytics:channel_detail' video.channel.channel_id %}" class="text-decoration-none text-secondary fw-medium">{{ video.channel.channel_name }}</a>
+                    </span>
+                    {% if video.published_at %}
+                        <span class="d-flex align-items-center gap-1">
+                            <i class="bi bi-calendar"></i>
+                            {{ video.published_at|date:"F d, Y" }}
+                        </span>
+                    {% endif %}
+                    {% if video.duration %}
+                        <span class="d-flex align-items-center gap-1">
+                            <i class="bi bi-clock"></i>
+                            {{ video.duration }}
+                        </span>
+                    {% endif %}
+                    {% if video.category %}
+                        <span class="badge badge-secondary">{{ video.category }}</span>
+                    {% endif %}
+                </div>
+                <p class="text-secondary" style="max-height: 120px; overflow: hidden;">{{ video.description }}</p>
+                <a href="https://www.youtube.com/watch?v={{ video.video_id }}" target="_blank" class="btn btn-danger btn-icon">
+                    <i class="bi bi-youtube"></i> View on YouTube
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 animate-in">
+        <div class="card">
+            <div class="card-body text-center">
+                <img src="https://img.youtube.com/vi/{{ video.video_id }}/maxresdefault.jpg" 
+                     alt="{{ video.title }}" 
+                     class="img-fluid rounded mb-3 shadow" 
+                     style="max-height: 250px;"
+                     onerror="this.src='https://img.youtube.com/vi/{{ video.video_id }}/mqdefault.jpg'">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Core Metrics -->
+<div class="row g-3 mb-5">
+    <div class="col-xl-3 col-md-6 animate-in stagger-1">
+        <div class="metric-card">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Views</div>
+            <div class="stat-value">{{ video.views|floatformat:0 }}</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 animate-in stagger-2">
+        <div class="metric-card">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Likes</div>
+            <div class="stat-value text-success">{{ video.likes|floatformat:0 }}</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 animate-in stagger-3">
+        <div class="metric-card">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Comments</div>
+            <div class="stat-value text-info">{{ video.comments|floatformat:0 }}</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 animate-in stagger-4">
+        <div class="metric-card">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Total Engagement</div>
+            <div class="stat-value text-warning">{{ analytics.total_engagement|floatformat:0 }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Engagement Rates -->
+<div class="row g-3 mb-5">
+    <div class="col-xl-3 col-md-6 animate-in stagger-1">
+        <div class="card stat-card border-primary h-100">
+            <div class="stat-icon primary"><i class="bi bi-graph-up"></i></div>
+            <div class="stat-value text-primary">{{ analytics.engagement_rate|floatformat:2 }}%</div>
+            <div class="stat-label">Engagement Rate</div>
+            <div class="text-muted small">(Likes + Comments) / Views × 100</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 animate-in stagger-2">
+        <div class="card stat-card border-success h-100">
+            <div class="stat-icon success"><i class="bi bi-hand-thumbs-up"></i></div>
+            <div class="stat-value text-success">{{ analytics.like_rate|floatformat:2 }}%</div>
+            <div class="stat-label">Like Rate</div>
+            <div class="text-muted small">Likes / Views × 100</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 animate-in stagger-3">
+        <div class="card stat-card border-info h-100">
+            <div class="stat-icon info"><i class="bi bi-chat"></i></div>
+            <div class="stat-value text-info">{{ analytics.comment_rate|floatformat:2 }}%</div>
+            <div class="stat-label">Comment Rate</div>
+            <div class="text-muted small">Comments / Views × 100</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 animate-in stagger-4">
+        <div class="card stat-card h-100">
+            <div class="stat-icon purple"><i class="bi bi-bar-chart"></i></div>
+            <div class="stat-value text-purple">{{ (analytics.like_rate|add:analytics.comment_rate)|floatformat:2 }}%</div>
+            <div class="stat-label">Like + Comment Rate</div>
+            <div class="text-muted small">Sum of individual rates</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-6 animate-in">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-pie-chart"></i> Engagement Composition</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="compositionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 animate-in">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-bar-chart"></i> Metrics Comparison</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="metricsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Video Metadata -->
+<div class="row g-4 mb-5">
+    <div class="col-12 animate-in">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-info-circle"></i> Video Metadata</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <strong class="text-muted d-block small">Video ID</strong>
+                        <code class="bg-tertiary px-2 py-1 rounded">{{ video.video_id }}</code>
+                    </div>
+                    <div class="col-md-4">
+                        <strong class="text-muted d-block small">Channel ID</strong>
+                        <code class="bg-tertiary px-2 py-1 rounded">{{ video.channel.channel_id }}</code>
+                    </div>
+                    <div class="col-md-4">
+                        <strong class="text-muted d-block small">Category ID</strong>
+                        <code class="bg-tertiary px-2 py-1 rounded">{{ video.category|default:"N/A" }}</code>
+                    </div>
+                    <div class="col-md-4">
+                        <strong class="text-muted d-block small">Duration</strong>
+                        <span>{{ video.duration|default:"N/A" }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong class="text-muted d-block small">Published</strong>
+                        <span>{{ video.published_at|date:"F d, Y H:i"|default:"N/A" }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong class="text-muted d-block small">Analyzed</strong>
+                        <span>{{ video.fetched_at|date:"F d, Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Insights -->
+<div class="row">
+    <div class="col-12 animate-in">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-lightbulb text-warning"></i> AI Insights</h5>
+            </div>
+            <div class="card-body">
+                {% if insights %}
+                    {% for insight in insights %}
+                        <div class="insight-item">
+                            <i class="bi bi-check-circle"></i>
+                            {{ insight }}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="bi bi-lightbulb-off" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">No insights available for this video.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const colors = {
+    primary: 'rgba(79, 70, 229, 0.8)',
+    primaryLight: 'rgba(79, 70, 229, 0.1)',
+    secondary: 'rgba(6, 182, 212, 0.8)',
+    success: 'rgba(16, 185, 129, 0.8)',
+    info: 'rgba(6, 182, 212, 0.8)',
+    warning: 'rgba(245, 158, 11, 0.8)',
+    purple: 'rgba(168, 85, 247, 0.8)',
+};
+
+// Composition Chart
+const compCtx = document.getElementById('compositionChart');
+if (compCtx) {
+    new Chart(compCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Likes', 'Comments'],
+            datasets: [{
+                data: [{{ video.likes }}, {{ video.comments }}],
+                backgroundColor: [colors.primary, colors.secondary],
+                borderColor: ['rgba(79, 70, 229, 1)', 'rgba(6, 182, 212, 1)'],
+                borderWidth: 3,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = ((context.raw / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.raw.toLocaleString()} (${pct}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '65%',
+            layout: { padding: 16 }
+        }
+    });
+}
+
+// Metrics Comparison Bar Chart
+const metricsCtx = document.getElementById('metricsChart');
+if (metricsCtx) {
+    new Chart(metricsCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Engagement Rate', 'Like Rate', 'Comment Rate'],
+            datasets: [{
+                label: 'Rate (%)',
+                data: [
+                    {{ analytics.engagement_rate|floatformat:2 }},
+                    {{ analytics.like_rate|floatformat:2 }},
+                    {{ analytics.comment_rate|floatformat:2 }}
+                ],
+                backgroundColor: [colors.primaryLight, 'rgba(16, 185, 129, 0.1)', 'rgba(6, 182, 212, 0.1)'],
+                borderColor: [colors.primary, colors.success, colors.secondary],
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 8,
+                }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    title: { display: true, text: 'Rate (%)', font: { size: 12, weight: '500' } },
+                    grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

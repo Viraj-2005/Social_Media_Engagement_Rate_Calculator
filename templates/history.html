@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}History - Social Media Engagement Rate Calculator{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header animate-in">
+    <h1 class="page-title"><i class="bi bi-clock-history text-primary"></i> Analysis History</h1>
+    <p class="page-subtitle">Previously analyzed videos and channels with full metrics</p>
+</div>
+
+<!-- Filters -->
+<div class="card mb-5 animate-in">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6 col-lg-4">
+                <label for="channel" class="form-label">Filter by Channel</label>
+                <select name="channel" id="channel" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Channels</option>
+                    {% for channel in channels %}
+                        <option value="{{ channel.channel_id }}" {% if channel.channel_id == selected_channel %}selected{% endif %}>
+                            {{ channel.channel_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6 col-lg-4 d-flex align-items-end">
+                {% if selected_channel %}
+                    <a href="{% url 'analytics:history' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Clear Filter
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Videos Table -->
+<div class="card animate-in">
+    <div class="card-body p-0">
+        {% if videos %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 35%;">Video</th>
+                            <th style="width: 18%;">Channel</th>
+                            <th style="width: 10%;">Views</th>
+                            <th style="width: 10%;">Likes</th>
+                            <th style="width: 10%;">Comments</th>
+                            <th style="width: 10%;">Engagement Rate</th>
+                            <th style="width: 10%;">Like Rate</th>
+                            <th style="width: 10%;">Comment Rate</th>
+                            <th style="width: 12%;">Analyzed</th>
+                            <th style="width: 5%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for video in videos %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'analytics:video_detail' video.video_id %}" class="text-decoration-none fw-medium text-primary">
+                                    {{ video.title|truncatechars:65 }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{% url 'analytics:channel_detail' video.channel.channel_id %}" class="text-decoration-none text-secondary fw-medium">
+                                    {{ video.channel.channel_name|truncatechars:25 }}
+                                </a>
+                            </td>
+                            <td>{{ video.views|floatformat:0 }}</td>
+                            <td>{{ video.likes|floatformat:0 }}</td>
+                            <td>{{ video.comments|floatformat:0 }}</td>
+                            <td>
+                                {% if video.engagement_analysis %}
+                                    <span class="badge badge-primary">{{ video.engagement_analysis.engagement_rate|floatformat:2 }}%</span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if video.engagement_analysis %}
+                                    <span class="badge badge-success">{{ video.engagement_analysis.like_rate|floatformat:2 }}%</span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if video.engagement_analysis %}
+                                    <span class="badge badge-info">{{ video.engagement_analysis.comment_rate|floatformat:2 }}%</span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ video.fetched_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'analytics:video_detail' video.video_id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <h5>No analyses found</h5>
+                <p>Start by analyzing your first <a href="{% url 'analytics:video_analysis' %}" class="text-primary">video</a> or <a href="{% url 'analytics:channel_analysis' %}" class="text-primary">channel</a>.</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="{% url 'analytics:video_analysis' %}" class="btn btn-primary btn-icon"><i class="bi bi-youtube"></i> Analyze Video</a>
+                    <a href="{% url 'analytics:channel_analysis' %}" class="btn btn-outline-primary btn-icon"><i class="bi bi-collection"></i> Analyze Channel</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
