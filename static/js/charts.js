@@ -175,7 +175,7 @@
                         ticks: { color: t.tick, font: { family: FONT, size: 11 }, autoSkip: false }
                     }
                 },
-                interaction: { mode: 'index', intersect: false, axis: 'y' }
+                interaction: { mode: 'nearest', intersect: false, axis: 'y' }
             }
         }));
         return chart;
