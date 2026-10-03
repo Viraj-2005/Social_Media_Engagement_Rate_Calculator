@@ -19,7 +19,8 @@
 
     /* ---------- chart initialization ---------- */
     function initCharts() {
-        if (!window.Chart) {
+        // Wait for Chart.js to be fully loaded
+        if (typeof window.Chart === 'undefined') {
             console.error('[EngageRate] Chart.js not loaded. Check CDN connection.');
             return;
         }
@@ -124,9 +125,32 @@
         });
     }
 
+    function waitForChartJS(maxAttempts, interval) {
+        return new Promise(function (resolve, reject) {
+            var attempts = 0;
+            function check() {
+                attempts++;
+                if (typeof window.Chart !== 'undefined') {
+                    console.log('[EngageRate] Chart.js loaded after', attempts, 'attempts');
+                    resolve();
+                } else if (attempts >= maxAttempts) {
+                    reject(new Error('Chart.js failed to load after ' + maxAttempts + ' attempts'));
+                } else {
+                    setTimeout(check, interval);
+                }
+            }
+            check();
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initTheme();
-        initCharts();
+        waitForChartJS(50, 100).then(function () {
+            console.log('[EngageRate] Chart.js ready, initializing charts...');
+            initCharts();
+        }).catch(function (err) {
+            console.error('[EngageRate] ' + err.message);
+        });
         initForms();
     });
 })();
