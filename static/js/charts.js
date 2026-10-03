@@ -144,10 +144,12 @@
                     tooltip: Object.assign(tooltipBase(t), {
                         callbacks: {
                             title: function (ctx) {
+                                if (!ctx || !ctx[0] || ctx[0].dataIndex === undefined) return '';
                                 var tip = (d.tooltips || [])[ctx[0].dataIndex];
                                 return tip ? tip.title : '';
                             },
                             label: function (ctx) {
+                                if (!ctx || !ctx[0] || ctx[0].dataIndex === undefined) return '';
                                 var tip = (d.tooltips || [])[ctx[0].dataIndex];
                                 if (!tip) return '';
                                 var total = num(tip.likes) + num(tip.comments);
@@ -275,10 +277,12 @@
                     tooltip: Object.assign(tooltipBase(t), {
                         callbacks: {
                             title: function (ctx) {
+                                if (!ctx || !ctx[0] || ctx[0].dataIndex === undefined) return '';
                                 var p = points[ctx[0].dataIndex];
                                 return p ? (p.title || p.label || 'Video') : '';
                             },
                             label: function (ctx) {
+                                if (!ctx || !ctx[0] || ctx[0].dataIndex === undefined) return '';
                                 var p = points[ctx[0].dataIndex];
                                 if (!p) return '';
                                 var rows = ['Views:  ' + fmtFull(p.views != null ? p.views : p.x)];
@@ -342,10 +346,12 @@
                     tooltip: Object.assign(tooltipBase(t), {
                         callbacks: {
                             title: function (ctx) {
+                                if (!ctx || !ctx[0] || ctx[0].dataIndex === undefined) return '';
                                 var tip = (d.tooltips || [])[ctx[0].dataIndex];
                                 return tip ? tip.title : '';
                             },
                             label: function (ctx) {
+                                if (!ctx || !ctx[0] || ctx[0].dataIndex === undefined) return '';
                                 var tip = (d.tooltips || [])[ctx[0].dataIndex];
                                 if (!tip) return '';
                                 return [
