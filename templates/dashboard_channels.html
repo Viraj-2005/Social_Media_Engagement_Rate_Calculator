@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% load formatters %}
+
+{% block title %}Channel Dashboard · EngageRate{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="page-hero animate-in">
+    <div>
+        <span class="hero-badge">Channel Analytics</span>
+        <h1 class="page-title">Channel Dashboard</h1>
+        <p class="page-subtitle">Channel-level engagement performance and cross-channel comparison.</p>
+    </div>
+    <div class="hero-actions">
+        <a href="{% url 'analytics:channel_analysis' %}" class="btn btn-primary"><i class="bi bi-collection"></i>Analyze Channel</a>
+    </div>
+</div>
+
+{% if dashboard_data.total_videos == 0 %}
+    <div class="card animate-in">
+        <div class="empty-state">
+            <span class="empty-icon"><i class="bi bi-collection"></i></span>
+            <h4>No channel data yet</h4>
+            <p>Analyze a YouTube channel to populate this dashboard.</p>
+            <a href="{% url 'analytics:channel_analysis' %}" class="btn btn-primary"><i class="bi bi-collection"></i>Analyze Channel</a>
+        </div>
+    </div>
+{% else %}
+    <!-- Summary metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card animate-in stagger-1">
+            <span class="metric-icon primary"><i class="bi bi-collection"></i></span>
+            <div class="metric-label">Channels</div>
+            <div class="metric-value">{{ dashboard_data.total_channels|abbreviate_number }}</div>
+            <div class="metric-context">Analyzed channels</div>
+        </div>
+        <div class="metric-card animate-in stagger-2">
+            <span class="metric-icon accent"><i class="bi bi-people"></i></span>
+            <div class="metric-label">Total Subscribers</div>
+            <div class="metric-value">{% if dashboard_data.total_subscribers %}{{ dashboard_data.total_subscribers|abbreviate_number }}{% else %}—{% endif %}</div>
+            <div class="metric-context">Where publicly available</div>
+        </div>
+        <div class="metric-card animate-in stagger-3">
+            <span class="metric-icon warning"><i class="bi bi-film"></i></span>
+            <div class="metric-label">Total Videos</div>
+            <div class="metric-value">{{ dashboard_data.total_videos|abbreviate_number }}</div>
+            <div class="metric-context">Across all channels</div>
+        </div>
+        <div class="metric-card animate-in stagger-4">
+            <span class="metric-icon success"><i class="bi bi-eye"></i></span>
+            <div class="metric-label">Total Views</div>
+            <div class="metric-value">{{ dashboard_data.total_views|abbreviate_number }}</div>
+            <div class="metric-context">Across all videos</div>
+        </div>
+        <div class="metric-card animate-in stagger-5">
+            <span class="metric-icon accent"><i class="bi bi-hand-thumbs-up"></i></span>
+            <div class="metric-label">Total Likes</div>
+            <div class="metric-value">{{ dashboard_data.total_likes|abbreviate_number }}</div>
+            <div class="metric-context">Across all videos</div>
+        </div>
+        <div class="metric-card highlight animate-in stagger-6">
+            <span class="metric-icon primary"><i class="bi bi-graph-up"></i></span>
+            <div class="metric-label">Overall ER</div>
+            <div class="metric-value text-primary">{{ dashboard_data.overall_engagement_rate|floatformat:2 }}%</div>
+            <div class="metric-context">(Likes + comments) / views</div>
+        </div>
+    </div>
+
+    <!-- Charts (from the channel videos in the database) -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-bar-chart-chart"></i>Engagement Rate by Video</h3>
+                    <span class="card-note">Latest 20 analyzed videos</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell">
+                        <canvas id="engagementChart" data-chart="bar" data-source="chart-engagement" data-empty="engagementEmpty"
+                                role="img" aria-label="Horizontal bar chart of engagement rate for recent channel videos"></canvas>
+                    </div>
+                    <div class="chart-empty" id="engagementEmpty" hidden>
+                        <i class="bi bi-bar-chart"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-pie-chart"></i>Engagement Composition</h3>
+                    <span class="card-note">Likes vs comments</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell chart-shell-sm">
+                        <canvas id="compositionChart" data-chart="composition" data-source="chart-composition" data-empty="compositionEmpty"
+                                role="img" aria-label="Doughnut chart of likes versus comments"></canvas>
+                    </div>
+                    <div class="chart-empty" id="compositionEmpty" hidden>
+                        <i class="bi bi-pie-chart"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-scatter"></i>Views vs Engagement Rate</h3>
+                    <span class="card-note">Each point is a video</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell">
+                        <canvas id="viewsVsEngagementChart" data-chart="scatter" data-source="chart-scatter" data-empty="scatterEmpty"
+                                role="img" aria-label="Scatter plot of views versus engagement rate"></canvas>
+                    </div>
+                    <div class="chart-empty" id="scatterEmpty" hidden>
+                        <i class="bi bi-scatter"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-graph-up"></i>Engagement Trend</h3>
+                    <span class="card-note">By publication date</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell chart-shell-sm">
+                        <canvas id="trendChart" data-chart="line" data-source="chart-trend" data-empty="trendEmpty"
+                                role="img" aria-label="Line chart of engagement rate over time"></canvas>
+                    </div>
+                    <div class="chart-empty" id="trendEmpty" hidden>
+                        <i class="bi bi-graph-up"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top channels -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-trophy" style="color: var(--warning);"></i>Top Channels by Engagement Rate</h3>
+                    <span class="card-note">Top 5</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if dashboard_data.top_channels_by_er %}
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Channel</th>
+                                    <th class="num">Subscribers</th>
+                                    <th class="num">Videos</th>
+                                    <th class="num">Total Views</th>
+                                    <th>Overall ER</th>
+                                    <th>Avg Video ER</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for channel in dashboard_data.top_channels_by_er %}
+                                <tr>
+                                    <td>
+                                        <div class="cell-media">
+                                            <span class="channel-avatar-sm">{{ channel.channel_name|first }}</span>
+                                            <a class="cell-title" href="{% url 'analytics:channel_detail' channel.channel_id %}">{{ channel.channel_name }}</a>
+                                        </div>
+                                    </td>
+                                    <td class="num cell-num">{% if channel.subscriber_count %}{{ channel.subscriber_count|abbreviate_number }}{% else %}—{% endif %}</td>
+                                    <td class="num cell-num">{{ channel.video_count }}</td>
+                                    <td class="num cell-num">{{ channel.total_views|abbreviate_number }}</td>
+                                    <td><span class="badge-er">{{ channel.overall_engagement_rate|floatformat:2 }}%</span></td>
+                                    <td><span class="badge-accent">{{ channel.average_video_engagement_rate|floatformat:2 }}%</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty"><i class="bi bi-collection"></i><p>No channel data available</p></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-people" style="color: var(--accent);"></i>Top Channels by Subscribers</h3>
+                    <span class="card-note">Top 5</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if dashboard_data.top_channels_by_subs %}
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Channel</th>
+                                    <th class="num">Subscribers</th>
+                                    <th class="num">Videos</th>
+                                    <th class="num">Total Views</th>
+                                    <th>Overall ER</th>
+                                    <th>Avg Video ER</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for channel in dashboard_data.top_channels_by_subs %}
+                                <tr>
+                                    <td>
+                                        <div class="cell-media">
+                                            <span class="channel-avatar-sm">{{ channel.channel_name|first }}</span>
+                                            <a class="cell-title" href="{% url 'analytics:channel_detail' channel.channel_id %}">{{ channel.channel_name }}</a>
+                                        </div>
+                                    </td>
+                                    <td class="num cell-num">{% if channel.subscriber_count %}{{ channel.subscriber_count|abbreviate_number }}{% else %}—{% endif %}</td>
+                                    <td class="num cell-num">{{ channel.video_count }}</td>
+                                    <td class="num cell-num">{{ channel.total_views|abbreviate_number }}</td>
+                                    <td><span class="badge-er">{{ channel.overall_engagement_rate|floatformat:2 }}%</span></td>
+                                    <td><span class="badge-accent">{{ channel.average_video_engagement_rate|floatformat:2 }}%</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty"><i class="bi bi-collection"></i><p>No channel data available</p></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All channels -->
+    <div class="card animate-in">
+        <div class="card-head">
+            <h3 class="card-title"><i class="bi bi-list-ul"></i>All Channels</h3>
+            <span class="card-note">{{ dashboard_data.channels|length }} channels</span>
+        </div>
+        <div class="card-body p-0">
+            {% if dashboard_data.channels %}
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 24%;">Channel</th>
+                            <th class="num" style="width: 13%;">Subscribers</th>
+                            <th class="num" style="width: 9%;">Videos</th>
+                            <th class="num" style="width: 14%;">Total Views</th>
+                            <th class="num" style="width: 12%;">Total Likes</th>
+                            <th style="width: 12%;">Overall ER</th>
+                            <th style="width: 12%;">Avg Video ER</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for channel in dashboard_data.channels %}
+                        <tr>
+                            <td>
+                                <div class="cell-media">
+                                    <span class="channel-avatar-sm">{{ channel.channel_name|first }}</span>
+                                    <a class="cell-title" href="{% url 'analytics:channel_detail' channel.channel_id %}">{{ channel.channel_name }}</a>
+                                </div>
+                            </td>
+                            <td class="num cell-num">{% if channel.subscriber_count %}{{ channel.subscriber_count|abbreviate_number }}{% else %}—{% endif %}</td>
+                            <td class="num cell-num">{{ channel.video_count }}</td>
+                            <td class="num cell-num">{{ channel.total_views|abbreviate_number }}</td>
+                            <td class="num cell-num">{{ channel.total_likes|abbreviate_number }}</td>
+                            <td><span class="badge-er">{{ channel.overall_engagement_rate|floatformat:2 }}%</span></td>
+                            <td><span class="badge-accent">{{ channel.average_video_engagement_rate|floatformat:2 }}%</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="chart-empty"><i class="bi bi-collection"></i><p>No channel data available</p></div>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+{{ chart_engagement|json_script:"chart-engagement" }}
+{{ chart_views_vs_engagement|json_script:"chart-scatter" }}
+{{ chart_composition|json_script:"chart-composition" }}
+{{ chart_trend|json_script:"chart-trend" }}
+{% endblock %}

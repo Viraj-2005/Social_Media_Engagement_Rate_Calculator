@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% load formatters %}
+
+{% block title %}Video Dashboard · EngageRate{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="page-hero animate-in">
+    <div>
+        <span class="hero-badge">Video Analytics</span>
+        <h1 class="page-title">Video Dashboard</h1>
+        <p class="page-subtitle">Individual video performance, engagement rates, and content breakdowns.</p>
+    </div>
+    <div class="hero-actions">
+        <a href="{% url 'analytics:video_analysis' %}" class="btn btn-primary"><i class="bi bi-youtube"></i>Analyze Video</a>
+    </div>
+</div>
+
+{% if dashboard_data.total_videos == 0 %}
+    <div class="card animate-in">
+        <div class="empty-state">
+            <span class="empty-icon"><i class="bi bi-film"></i></span>
+            <h4>No video data yet</h4>
+            <p>Analyze your first YouTube video to populate this dashboard.</p>
+            <a href="{% url 'analytics:video_analysis' %}" class="btn btn-primary"><i class="bi bi-youtube"></i>Analyze Video</a>
+        </div>
+    </div>
+{% else %}
+    <!-- Summary metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card animate-in stagger-1">
+            <span class="metric-icon primary"><i class="bi bi-film"></i></span>
+            <div class="metric-label">Total Videos</div>
+            <div class="metric-value">{{ dashboard_data.total_videos|abbreviate_number }}</div>
+            <div class="metric-context">Analyzed videos</div>
+        </div>
+        <div class="metric-card animate-in stagger-2">
+            <span class="metric-icon warning"><i class="bi bi-eye"></i></span>
+            <div class="metric-label">Total Views</div>
+            <div class="metric-value">{{ dashboard_data.total_views|abbreviate_number }}</div>
+            <div class="metric-context">Across all videos</div>
+        </div>
+        <div class="metric-card animate-in stagger-3">
+            <span class="metric-icon success"><i class="bi bi-hand-thumbs-up"></i></span>
+            <div class="metric-label">Total Likes</div>
+            <div class="metric-value">{{ dashboard_data.total_likes|abbreviate_number }}</div>
+            <div class="metric-context">Across all videos</div>
+        </div>
+        <div class="metric-card animate-in stagger-4">
+            <span class="metric-icon accent"><i class="bi bi-chat"></i></span>
+            <div class="metric-label">Total Comments</div>
+            <div class="metric-value">{{ dashboard_data.total_comments|abbreviate_number }}</div>
+            <div class="metric-context">Across all videos</div>
+        </div>
+        <div class="metric-card animate-in stagger-5">
+            <span class="metric-icon primary"><i class="bi bi-graph-up"></i></span>
+            <div class="metric-label">Avg Video ER</div>
+            <div class="metric-value text-primary">{{ dashboard_data.average_engagement_rate|floatformat:2 }}%</div>
+            <div class="metric-context">Mean of video rates</div>
+        </div>
+        <div class="metric-card highlight animate-in stagger-6">
+            <span class="metric-icon success"><i class="bi bi-percent"></i></span>
+            <div class="metric-label">Overall ER</div>
+            <div class="metric-value text-success">{{ dashboard_data.overall_engagement_rate|floatformat:2 }}%</div>
+            <div class="metric-context">(Likes + comments) / views</div>
+        </div>
+    </div>
+
+    <!-- Charts row 1 -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-bar-chart-chart"></i>Engagement Rate by Video</h3>
+                    <span class="card-note">Latest {{ dashboard_data.recent_videos|length }} analyses</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell">
+                        <canvas id="engagementChart" data-chart="bar" data-source="chart-engagement" data-empty="engagementEmpty"
+                                role="img" aria-label="Horizontal bar chart of engagement rate for recent videos"></canvas>
+                    </div>
+                    <div class="chart-empty" id="engagementEmpty" hidden>
+                        <i class="bi bi-bar-chart"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-pie-chart"></i>Engagement Composition</h3>
+                    <span class="card-note">Likes vs comments</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell chart-shell-sm">
+                        <canvas id="compositionChart" data-chart="composition" data-source="chart-composition" data-empty="compositionEmpty"
+                                role="img" aria-label="Doughnut chart of likes versus comments"></canvas>
+                    </div>
+                    <div class="chart-empty" id="compositionEmpty" hidden>
+                        <i class="bi bi-pie-chart"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts row 2 -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-scatter"></i>Views vs Engagement Rate</h3>
+                    <span class="card-note">Each point is a video</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell">
+                        <canvas id="viewsVsEngagementChart" data-chart="scatter" data-source="chart-scatter" data-empty="scatterEmpty"
+                                role="img" aria-label="Scatter plot of views versus engagement rate"></canvas>
+                    </div>
+                    <div class="chart-empty" id="scatterEmpty" hidden>
+                        <i class="bi bi-scatter"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-graph-up"></i>Engagement Trend</h3>
+                    <span class="card-note">By publication date</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell chart-shell-sm">
+                        <canvas id="trendChart" data-chart="line" data-source="chart-trend" data-empty="trendEmpty"
+                                role="img" aria-label="Line chart of engagement rate over time"></canvas>
+                    </div>
+                    <div class="chart-empty" id="trendEmpty" hidden>
+                        <i class="bi bi-graph-up"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top / Bottom videos -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-trophy" style="color: var(--warning);"></i>Top Videos by Engagement Rate</h3>
+                    <span class="card-note">Top 5</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if dashboard_data.top_videos %}
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Video</th>
+                                    <th>Channel</th>
+                                    <th class="num">Views</th>
+                                    <th>Engagement</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for video in dashboard_data.top_videos %}
+                                <tr>
+                                    <td>
+                                        <div class="cell-media">
+                                            <img src="{{ video.thumbnail_url }}" alt="" loading="lazy">
+                                            <a class="cell-title" href="{% url 'analytics:video_detail' video.video_id %}">{{ video.title }}</a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a class="text-decoration-none" style="color: var(--text-secondary); font-weight: 500; font-size: 0.85rem;"
+                                           href="{% url 'analytics:channel_detail' video.channel_id %}">{{ video.channel_name|truncatechars:22 }}</a>
+                                    </td>
+                                    <td class="num cell-num">{{ video.views|abbreviate_number }}</td>
+                                    <td><span class="badge-er">{{ video.engagement_rate|floatformat:2 }}%</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty"><i class="bi bi-film"></i><p>No video data available</p></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-arrow-down" style="color: var(--danger);"></i>Bottom Videos by Engagement Rate</h3>
+                    <span class="card-note">Min 100 views · 5 shown</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if dashboard_data.bottom_videos %}
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Video</th>
+                                    <th>Channel</th>
+                                    <th class="num">Views</th>
+                                    <th>Engagement</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for video in dashboard_data.bottom_videos %}
+                                <tr>
+                                    <td>
+                                        <div class="cell-media">
+                                            <img src="{{ video.thumbnail_url }}" alt="" loading="lazy">
+                                            <a class="cell-title" href="{% url 'analytics:video_detail' video.video_id %}">{{ video.title }}</a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a class="text-decoration-none" style="color: var(--text-secondary); font-weight: 500; font-size: 0.85rem;"
+                                           href="{% url 'analytics:channel_detail' video.channel_id %}">{{ video.channel_name|truncatechars:22 }}</a>
+                                    </td>
+                                    <td class="num cell-num">{{ video.views|abbreviate_number }}</td>
+                                    <td><span class="badge-muted">{{ video.engagement_rate|floatformat:2 }}%</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty"><i class="bi bi-film"></i><p>No video data available</p></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category breakdown & recent -->
+    <div class="row g-4">
+        <div class="col-xl-6 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-tags"></i>Videos by Category</h3>
+                    <span class="card-note">Top 10</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if dashboard_data.category_breakdown %}
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="num">Videos</th>
+                                    <th class="num">Total Views</th>
+                                    <th class="num">Avg ER</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cat in dashboard_data.category_breakdown %}
+                                <tr>
+                                    <td style="font-weight: 500;">{{ cat.category|category_name }}</td>
+                                    <td class="num cell-num">{{ cat.count }}</td>
+                                    <td class="num cell-num">{{ cat.total_views|abbreviate_number }}</td>
+                                    <td class="num"><span class="badge-accent">{{ cat.avg_er|floatformat:2 }}%</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty"><i class="bi bi-tags"></i><p>No category data available</p></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-clock-history"></i>Recent Analyses</h3>
+                    <a href="{% url 'analytics:history' %}" class="btn btn-ghost btn-sm">View all</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if dashboard_data.recent_videos %}
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Video</th>
+                                    <th>Channel</th>
+                                    <th class="num">Views</th>
+                                    <th>Engagement</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for video in dashboard_data.recent_videos %}
+                                <tr>
+                                    <td>
+                                        <div class="cell-media">
+                                            <img src="{{ video.thumbnail_url }}" alt="" loading="lazy">
+                                            <a class="cell-title" href="{% url 'analytics:video_detail' video.video_id %}">{{ video.title }}</a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a class="text-decoration-none" style="color: var(--text-secondary); font-weight: 500; font-size: 0.85rem;"
+                                           href="{% url 'analytics:channel_detail' video.channel_id %}">{{ video.channel_name|truncatechars:20 }}</a>
+                                    </td>
+                                    <td class="num cell-num">{{ video.views|abbreviate_number }}</td>
+                                    <td><span class="badge-er">{{ video.engagement_rate|floatformat:2 }}%</span></td>
+                                    <td style="white-space: nowrap; color: var(--text-secondary); font-size: 0.8rem;">{{ video.fetched_at|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty"><i class="bi bi-clock-history"></i><p>No recent analyses</p></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{{ chart_engagement|json_script:"chart-engagement" }}
+{{ chart_views_vs_engagement|json_script:"chart-scatter" }}
+{{ chart_composition|json_script:"chart-composition" }}
+{{ chart_trend|json_script:"chart-trend" }}
+{% endblock %}

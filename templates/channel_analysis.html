@@ -1,189 +1,162 @@
 {% extends 'base.html' %}
 
-{% block title %}Analyze Channel - Social Media Engagement Rate Calculator{% endblock %}
+{% block title %}Analyze Channel · EngageRate{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-xl-8 col-lg-9">
-        <!-- Main Form Card -->
-        <div class="card mb-5 animate-in">
-            <div class="card-header">
-                <h5 class="card-title"><i class="bi bi-collection text-primary"></i> Analyze YouTube Channel</h5>
-            </div>
-            <div class="card-body">
-                <form method="post" id="channelAnalysisForm">
-                    {% csrf_token %}
-                    <div class="mb-4">
-                        <label for="{{ form.channel_url.id_for_label }}" class="form-label">{{ form.channel_url.label }}</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-collection"></i></span>
-                            {{ form.channel_url }}
-                        </div>
-                        {% if form.channel_url.help_text %}
-                            <div class="form-text">{{ form.channel_url.help_text }}</div>
-                        {% endif %}
-                        {% if form.channel_url.errors %}
-                            <div class="text-danger small mt-1">{{ form.channel_url.errors }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="mb-4">
-                        <label for="{{ form.max_videos.id_for_label }}" class="form-label">{{ form.max_videos.label }}</label>
-                        <div class="input-group" style="max-width: 200px;">
-                            <span class="input-group-text"><i class="bi bi-film"></i></span>
-                            {{ form.max_videos }}
-                        </div>
-                        {% if form.max_videos.help_text %}
-                            <div class="form-text">{{ form.max_videos.help_text }}</div>
-                        {% endif %}
-                        {% if form.max_videos.errors %}
-                            <div class="text-danger small mt-1">{{ form.max_videos.errors }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg btn-icon" id="analyzeChannelBtn">
-                            <i class="bi bi-search"></i> Analyze Channel
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <div class="col-xl-8 col-lg-10">
+        <!-- Header -->
+        <div class="text-center mb-4 animate-in">
+            <span class="hero-badge">Channel Analysis</span>
+            <h1 class="page-title">Analyze YouTube Channel</h1>
+            <p class="page-subtitle mx-auto" style="max-width: 520px;">Enter a YouTube channel URL to analyze its uploads and engagement performance.</p>
         </div>
 
-        <!-- Supported Formats & Info -->
-        <div class="row g-4 mb-5">
-            <div class="col-md-6 animate-in stagger-1">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h6 class="card-title mb-0"><i class="bi bi-link"></i> Supported URL Formats</h6>
+        <!-- Form -->
+        <div class="form-card animate-in stagger-1">
+            <form method="post" data-analyze="Analyzing channel" novalidate>
+                {% csrf_token %}
+                <div class="field">
+                    <label for="{{ form.channel_url.id_for_label }}" class="form-label">YouTube Channel URL</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-collection"></i></span>
+                        {{ form.channel_url }}
                     </div>
-                    <div class="card-body">
-                        <ul class="mb-0 list-unstyled">
-                            <li class="mb-2"><code class="bg-tertiary px-2 py-1 rounded">https://www.youtube.com/@channelname</code> (Handle)</li>
-                            <li class="mb-2"><code class="bg-tertiary px-2 py-1 rounded">https://www.youtube.com/c/customname</code> (Custom URL)</li>
-                            <li class="mb-2"><code class="bg-tertiary px-2 py-1 rounded">https://www.youtube.com/channel/CHANNEL_ID</code> (Channel ID)</li>
-                            <li><code class="bg-tertiary px-2 py-1 rounded">https://www.youtube.com/user/username</code> (Legacy)</li>
-                        </ul>
-                        <p class="text-muted small mb-0 mt-3">The system automatically resolves handles and custom URLs to channel IDs.</p>
-                    </div>
+                    {% if form.channel_url.help_text %}
+                        <div class="form-text">{{ form.channel_url.help_text }}</div>
+                    {% endif %}
+                    {% if form.channel_url.errors %}
+                        <div class="form-error" role="alert">{{ form.channel_url.errors.0 }}</div>
+                    {% endif %}
                 </div>
-            </div>
+                <div class="field" style="max-width: 260px;">
+                    <label for="{{ form.max_videos.id_for_label }}" class="form-label">{{ form.max_videos.label }}</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-film"></i></span>
+                        {{ form.max_videos }}
+                    </div>
+                    {% if form.max_videos.help_text %}
+                        <div class="form-text">{{ form.max_videos.help_text }}</div>
+                    {% endif %}
+                    {% if form.max_videos.errors %}
+                        <div class="form-error" role="alert">{{ form.max_videos.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100" id="analyzeChannelBtn">
+                    <i class="bi bi-graph-up"></i>Analyze Channel
+                </button>
+            </form>
+        </div>
 
+        <!-- Supported formats + quota -->
+        <div class="row g-4 mt-4">
             <div class="col-md-6 animate-in stagger-2">
                 <div class="card h-100">
-                    <div class="card-header">
-                        <h6 class="card-title mb-0"><i class="bi bi-lightning-charge"></i> API Quota Information</h6>
+                    <div class="card-head">
+                        <h3 class="card-title"><i class="bi bi-link-45deg"></i>Supported URL Formats</h3>
                     </div>
                     <div class="card-body">
-                        <div class="row g-3 text-center">
-                            <div class="col-6">
-                                <div class="stat-card h-100">
-                                    <div class="stat-icon primary"><i class="bi bi-database"></i></div>
-                                    <div class="stat-value">~1</div>
-                                    <div class="stat-label">Channel Info</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="stat-card h-100">
-                                    <div class="stat-icon success"><i class="bi bi-list-ul"></i></div>
-                                    <div class="stat-value">~1</div>
-                                    <div class="stat-label">Playlist/50 videos</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="stat-card h-100">
-                                    <div class="stat-icon info"><i class="bi bi-bar-chart"></i></div>
-                                    <div class="stat-value">~1</div>
-                                    <div class="stat-label">Video Stats/50</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="stat-card h-100">
-                                    <div class="stat-icon warning"><i class="bi bi-speedometer2"></i></div>
-                                    <div class="stat-value">~3-5</div>
-                                    <div class="stat-label">Per Channel (20 vids)</div>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="text-muted small mb-0 mt-3"><i class="bi bi-info-circle"></i> Daily limit: 10,000 units — supports 2,000+ channel analyses/day.</p>
+                        <ul class="info-list">
+                            <li><i class="bi bi-check2"></i><code>youtube.com/@handle</code> (channel handle)</li>
+                            <li><i class="bi bi-check2"></i><code>youtube.com/c/customname</code></li>
+                            <li><i class="bi bi-check2"></i><code>youtube.com/channel/CHANNEL_ID</code></li>
+                            <li><i class="bi bi-check2"></i><code>youtube.com/user/username</code> (legacy)</li>
+                        </ul>
+                        <p class="form-text mb-0">Handles and custom URLs are resolved to channel IDs automatically.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 animate-in stagger-3">
+                <div class="card h-100">
+                    <div class="card-head">
+                        <h3 class="card-title"><i class="bi bi-lightning-charge"></i>API Quota</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="info-list">
+                            <li><i class="bi bi-database"></i>~1 unit — channel info</li>
+                            <li><i class="bi bi-list-ul"></i>~1 unit — playlist items (50 videos)</li>
+                            <li><i class="bi bi-bar-chart"></i>~1 unit — video statistics (50 videos)</li>
+                            <li><i class="bi bi-info-circle"></i>~3–5 units per 20-video channel analysis</li>
+                        </ul>
+                        <p class="form-text mb-0">Daily limit: 10,000 units. Higher video counts use more quota.</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- What You Get -->
-        <div class="card animate-in stagger-3">
-            <div class="card-header">
-                <h6 class="card-title mb-0"><i class="bi bi-graph-up"></i> Channel Analysis Includes</h6>
+        <!-- What you get -->
+        <div class="card mt-4 animate-in stagger-4">
+            <div class="card-head">
+                <h3 class="card-title"><i class="bi bi-graph-up"></i>Channel Analysis Includes</h3>
             </div>
             <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="d-flex gap-3">
-                            <div class="stat-icon primary flex-shrink-0"><i class="bi bi-people"></i></div>
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-check">
+                            <span class="metric-icon primary"><i class="bi bi-people"></i></span>
                             <div>
-                                <h6 class="mb-1">Channel Overview</h6>
-                                <p class="text-muted small mb-0">Name, subscribers, total videos analyzed</p>
+                                <h6>Channel Overview</h6>
+                                <p>Name, subscribers, and analyzed video counts.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="d-flex gap-3">
-                            <div class="stat-icon success flex-shrink-0"><i class="bi bi-trophy"></i></div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-check">
+                            <span class="metric-icon success"><i class="bi bi-trophy"></i></span>
                             <div>
-                                <h6 class="mb-1">Top Performers</h6>
-                                <p class="text-muted small mb-0">Highest/lowest engagement, most viewed</p>
+                                <h6>Top &amp; Bottom Performers</h6>
+                                <p>Highest and lowest engagement videos.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="d-flex gap-3">
-                            <div class="stat-icon info flex-shrink-0"><i class="bi bi-graph-up"></i></div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-check">
+                            <span class="metric-icon accent"><i class="bi bi-graph-up"></i></span>
                             <div>
-                                <h6 class="mb-1">Trends</h6>
-                                <p class="text-muted small mb-0">Engagement over time, views vs ER scatter</p>
+                                <h6>Trends &amp; Scatter</h6>
+                                <p>Engagement over time, views vs rate.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="d-flex gap-3">
-                            <div class="stat-icon warning flex-shrink-0"><i class="bi bi-pie-chart"></i></div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-check">
+                            <span class="metric-icon warning"><i class="bi bi-pie-chart"></i></span>
                             <div>
-                                <h6 class="mb-1">Composition</h6>
-                                <p class="text-muted small mb-0">Likes vs comments breakdown</p>
+                                <h6>Composition</h6>
+                                <p>Likes vs comments breakdown.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="d-flex gap-3">
-                            <div class="stat-icon purple flex-shrink-0"><i class="bi bi-table"></i></div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-check">
+                            <span class="metric-icon primary"><i class="bi bi-table"></i></span>
                             <div>
-                                <h6 class="mb-1">Video Table</h6>
-                                <p class="text-muted small mb-0">All videos with individual metrics</p>
+                                <h6>Video Table</h6>
+                                <p>All analyzed videos with individual metrics.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="d-flex gap-3">
-                            <div class="stat-icon danger flex-shrink-0"><i class="bi bi-lightbulb"></i></div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-check">
+                            <span class="metric-icon danger"><i class="bi bi-lightbulb"></i></span>
                             <div>
-                                <h6 class="mb-1">AI Insights</h6>
-                                <p class="text-muted small mb-0">Rule-based observations & recommendations</p>
+                                <h6>Insights</h6>
+                                <p>Rule-based observations and comparisons.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-document.getElementById('channelAnalysisForm').addEventListener('submit', function(e) {
-    const btn = document.getElementById('analyzeChannelBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Analyzing...';
-});
-</script>
+<!-- Loading overlay -->
+<div class="loading-overlay" data-loading-overlay hidden aria-busy="true">
+    <div class="loading-card">
+        <div class="spinner" role="status" aria-label="Loading"></div>
+        <p class="loading-title" data-loading-title>Analyzing channel…</p>
+        <p class="loading-sub">Fetching channel videos and metrics from the YouTube API. This can take a few seconds.</p>
+    </div>
+</div>
 {% endblock %}

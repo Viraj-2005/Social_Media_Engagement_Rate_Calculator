@@ -1,433 +1,212 @@
 {% extends 'base.html' %}
+{% load formatters %}
 
-{% block title %}Dashboard - Social Media Engagement Rate Calculator{% endblock %}
-
-{% block extra_css %}
-<style>
-    .chart-container { position: relative; height: 380px; }
-    .chart-container-sm { position: relative; height: 300px; }
-    @media (max-width: 768px) {
-        .chart-container { height: 320px; }
-        .chart-container-sm { height: 280px; }
-    }
-    .stat-card.mini {
-        padding: 1rem;
-    }
-    .stat-card.mini .stat-icon { width: 40px; height: 40px; font-size: 1rem; margin-bottom: 0.5rem; }
-    .stat-card.mini .stat-value { font-size: 1.5rem; }
-    .stat-card.mini .stat-label { font-size: 0.7rem; }
-</style>
-{% endblock %}
+{% block title %}Dashboard · EngageRate{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="page-header animate-in">
-    <h1 class="page-title"><i class="bi bi-speedometer2 text-primary"></i> Analytics Dashboard</h1>
-    <p class="page-subtitle">Overview of all analyzed content with real-time metrics and visualizations</p>
-</div>
-
-<!-- Summary Cards -->
-<div class="row g-3 mb-5">
-    <div class="col-xl-2 col-md-4 col-6 animate-in stagger-1">
-        <div class="stat-card">
-            <div class="stat-icon primary"><i class="bi bi-film"></i></div>
-            <div class="stat-value">{{ dashboard_data.total_videos }}</div>
-            <div class="stat-label">Total Videos</div>
-        </div>
+<!-- Header -->
+<div class="page-hero animate-in">
+    <div>
+        <span class="hero-badge">Social Analytics</span>
+        <h1 class="page-title">Engagement Overview</h1>
+        <p class="page-subtitle">Track YouTube engagement across analyzed videos and channels.</p>
     </div>
-    <div class="col-xl-2 col-md-4 col-6 animate-in stagger-2">
-        <div class="stat-card">
-            <div class="stat-icon info"><i class="bi bi-collection"></i></div>
-            <div class="stat-value">{{ dashboard_data.total_channels }}</div>
-            <div class="stat-label">Channels</div>
-        </div>
-    </div>
-    <div class="col-xl-2 col-md-4 col-6 animate-in stagger-3">
-        <div class="stat-card">
-            <div class="stat-icon warning"><i class="bi bi-eye"></i></div>
-            <div class="stat-value">{{ dashboard_data.total_views|floatformat:0 }}</div>
-            <div class="stat-label">Total Views</div>
-        </div>
-    </div>
-    <div class="col-xl-2 col-md-4 col-6 animate-in stagger-4">
-        <div class="stat-card">
-            <div class="stat-icon success"><i class="bi bi-hand-thumbs-up"></i></div>
-            <div class="stat-value">{{ dashboard_data.total_likes|floatformat:0 }}</div>
-            <div class="stat-label">Total Likes</div>
-        </div>
-    </div>
-    <div class="col-xl-2 col-md-4 col-6 animate-in stagger-5">
-        <div class="stat-card">
-            <div class="stat-icon purple"><i class="bi bi-chat"></i></div>
-            <div class="stat-value">{{ dashboard_data.total_comments|floatformat:0 }}</div>
-            <div class="stat-label">Total Comments</div>
-        </div>
-    </div>
-    <div class="col-xl-2 col-md-4 col-6 animate-in stagger-6">
-        <div class="stat-card">
-            <div class="stat-icon danger"><i class="bi bi-graph-up"></i></div>
-            <div class="stat-value">{{ dashboard_data.average_engagement_rate|floatformat:2 }}%</div>
-            <div class="stat-label">Avg Video ER</div>
-        </div>
-    </div>
-    <div class="col-xl-2 col-md-4 col-6 animate-in">
-        <div class="stat-card">
-            <div class="stat-icon secondary"><i class="bi bi-bar-chart"></i></div>
-            <div class="stat-value">{{ dashboard_data.overall_engagement_rate|floatformat:2 }}%</div>
-            <div class="stat-label">Overall ER</div>
-        </div>
+    <div class="hero-actions">
+        <a href="{% url 'analytics:video_analysis' %}" class="btn btn-primary"><i class="bi bi-youtube"></i>Analyze Video</a>
+        <a href="{% url 'analytics:channel_analysis' %}" class="btn btn-outline"><i class="bi bi-collection"></i>Analyze Channel</a>
     </div>
 </div>
 
-<!-- Charts Row 1 -->
-<div class="row g-4 mb-5">
-    <div class="col-xl-8 animate-in">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0"><i class="bi bi-bar-chart"></i> Engagement Rate by Video</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="engagementChart"></canvas>
-                </div>
-            </div>
+{% if dashboard_data.total_videos == 0 %}
+    <!-- Global empty state -->
+    <div class="card animate-in">
+        <div class="empty-state">
+            <span class="empty-icon"><i class="bi bi-inbox"></i></span>
+            <h4>No analyses yet</h4>
+            <p>Start by analyzing a YouTube video or channel. Metrics and charts will appear here once data is fetched from the YouTube API.</p>
+            <a href="{% url 'analytics:video_analysis' %}" class="btn btn-primary"><i class="bi bi-youtube"></i>Analyze Video</a>
+            <a href="{% url 'analytics:channel_analysis' %}" class="btn btn-outline"><i class="bi bi-collection"></i>Analyze Channel</a>
         </div>
     </div>
-    <div class="col-xl-4 animate-in">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0"><i class="bi bi-pie-chart"></i> Engagement Composition</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container-sm">
-                    <canvas id="compositionChart"></canvas>
-                </div>
-            </div>
+{% else %}
+    <!-- Summary metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card animate-in stagger-1">
+            <span class="metric-icon primary"><i class="bi bi-film"></i></span>
+            <div class="metric-label">Total Analyses</div>
+            <div class="metric-value">{{ dashboard_data.total_videos|abbreviate_number }}</div>
+            <div class="metric-context">Videos analyzed</div>
+        </div>
+        <div class="metric-card animate-in stagger-2">
+            <span class="metric-icon accent"><i class="bi bi-collection"></i></span>
+            <div class="metric-label">Channels</div>
+            <div class="metric-value">{{ dashboard_data.total_channels|abbreviate_number }}</div>
+            <div class="metric-context">Unique channels</div>
+        </div>
+        <div class="metric-card animate-in stagger-3">
+            <span class="metric-icon warning"><i class="bi bi-eye"></i></span>
+            <div class="metric-label">Total Views</div>
+            <div class="metric-value">{{ dashboard_data.total_views|abbreviate_number }}</div>
+            <div class="metric-context">Across analyzed content</div>
+        </div>
+        <div class="metric-card animate-in stagger-4">
+            <span class="metric-icon success"><i class="bi bi-hand-thumbs-up"></i></span>
+            <div class="metric-label">Total Likes</div>
+            <div class="metric-value">{{ dashboard_data.total_likes|abbreviate_number }}</div>
+            <div class="metric-context">Across analyzed content</div>
+        </div>
+        <div class="metric-card animate-in stagger-5">
+            <span class="metric-icon accent"><i class="bi bi-chat"></i></span>
+            <div class="metric-label">Total Comments</div>
+            <div class="metric-value">{{ dashboard_data.total_comments|abbreviate_number }}</div>
+            <div class="metric-context">Across analyzed content</div>
+        </div>
+        <div class="metric-card highlight animate-in stagger-6">
+            <span class="metric-icon primary"><i class="bi bi-graph-up"></i></span>
+            <div class="metric-label">Avg Video ER</div>
+            <div class="metric-value text-primary">{{ dashboard_data.average_engagement_rate|floatformat:2 }}%</div>
+            <div class="metric-context">Mean of video engagement rates</div>
         </div>
     </div>
-</div>
 
-<!-- Charts Row 2 -->
-<div class="row g-4 mb-5">
-    <div class="col-xl-8 animate-in">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0"><i class="bi bi-scatter"></i> Views vs Engagement Rate</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="viewsVsEngagementChart"></canvas>
+    <!-- Charts row 1 -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-bar-chart-chart"></i>Engagement Rate by Video</h3>
+                    <span class="card-note">Latest {{ dashboard_data.recent_videos|length }} analyses</span>
                 </div>
-                <p class="text-muted small text-center mt-2">Each dot represents a video. Hover for details.</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-4 animate-in">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0"><i class="bi bi-graph-up"></i> Engagement Trend</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container-sm">
-                    <canvas id="trendChart"></canvas>
-                </div>
-                <p class="text-muted small text-center mt-2">Engagement rate over publication timeline.</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Recent Analyses -->
-<div class="row">
-    <div class="col-12 animate-in">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0"><i class="bi bi-clock-history"></i> Recent Analyses</h5>
-                <a href="{% url 'analytics:history' %}" class="btn btn-sm btn-outline-primary">View All History</a>
-            </div>
-            <div class="card-body p-0">
-                {% if dashboard_data.recent_videos %}
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 35%;">Video</th>
-                                    <th style="width: 20%;">Channel</th>
-                                    <th style="width: 10%;">Views</th>
-                                    <th style="width: 10%;">Likes</th>
-                                    <th style="width: 10%;">Comments</th>
-                                    <th style="width: 15%;">Engagement Rate</th>
-                                    <th>Analyzed</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for video in dashboard_data.recent_videos %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <img src="https://img.youtube.com/vi/{{ video.video_id }}/mqdefault.jpg" 
-                                                 alt="{{ video.title }}" 
-                                                 class="rounded" style="width: 64px; height: 36px; object-fit: cover;"
-                                                 onerror="this.src='https://via.placeholder.com/64x36'">
-                                            <div>
-                                                <a href="{% url 'analytics:video_detail' video.video_id %}" class="text-decoration-none fw-medium text-primary">{{ video.title|truncatechars:55 }}</a>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'analytics:channel_detail' video.channel.channel_id %}" class="text-decoration-none text-secondary fw-medium">
-                                            {{ video.channel.channel_name|truncatechars:25 }}
-                                        </a>
-                                    </td>
-                                    <td>{{ video.views|floatformat:0 }}</td>
-                                    <td>{{ video.likes|floatformat:0 }}</td>
-                                    <td>{{ video.comments|floatformat:0 }}</td>
-                                    <td>
-                                        {% if video.engagement_analysis %}
-                                            <span class="badge badge-primary">{{ video.engagement_analysis.engagement_rate|floatformat:2 }}%</span>
-                                        {% else %}
-                                            <span class="text-muted">N/A</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-muted small">{{ video.fetched_at|date:"M d, Y H:i" }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                <div class="card-body">
+                    <div class="chart-shell">
+                        <canvas id="engagementChart" data-chart="bar" data-source="chart-engagement" data-empty="engagementEmpty"
+                                role="img" aria-label="Horizontal bar chart of engagement rate for recent videos"></canvas>
                     </div>
-                {% else %}
-                    <div class="empty-state">
-                        <i class="bi bi-inbox"></i>
-                        <h5>No analyses yet</h5>
-                        <p>Start by analyzing your first <a href="{% url 'analytics:video_analysis' %}" class="text-primary">video</a> or <a href="{% url 'analytics:channel_analysis' %}" class="text-primary">channel</a>.</p>
-                        <div class="d-flex gap-2 justify-content-center">
-                            <a href="{% url 'analytics:video_analysis' %}" class="btn btn-primary btn-icon"><i class="bi bi-youtube"></i> Analyze Video</a>
-                            <a href="{% url 'analytics:channel_analysis' %}" class="btn btn-outline-primary btn-icon"><i class="bi bi-collection"></i> Analyze Channel</a>
-                        </div>
+                    <div class="chart-empty" id="engagementEmpty" hidden>
+                        <i class="bi bi-bar-chart"></i>
+                        <p>No engagement data available yet.</p>
                     </div>
-                {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-pie-chart"></i>Engagement Composition</h3>
+                    <span class="card-note">Likes vs comments</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell chart-shell-sm">
+                        <canvas id="compositionChart" data-chart="composition" data-source="chart-composition" data-empty="compositionEmpty"
+                                role="img" aria-label="Doughnut chart of likes versus comments"></canvas>
+                    </div>
+                    <div class="chart-empty" id="compositionEmpty" hidden>
+                        <i class="bi bi-pie-chart"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-// Chart Color Palette
-const colors = {
-    primary: 'rgba(79, 70, 229, 0.8)',
-    primaryLight: 'rgba(79, 70, 229, 0.1)',
-    secondary: 'rgba(6, 182, 212, 0.8)',
-    success: 'rgba(16, 185, 129, 0.8)',
-    warning: 'rgba(245, 158, 11, 0.8)',
-    danger: 'rgba(239, 68, 68, 0.8)',
-    purple: 'rgba(168, 85, 247, 0.8)',
-    border: 'rgba(148, 163, 184, 0.1)',
-    text: '#94a3b8'
-};
+    <!-- Charts row 2 -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-scatter"></i>Views vs Engagement Rate</h3>
+                    <span class="card-note">Each point is a video</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell">
+                        <canvas id="viewsVsEngagementChart" data-chart="scatter" data-source="chart-scatter" data-empty="scatterEmpty"
+                                role="img" aria-label="Scatter plot of views versus engagement rate"></canvas>
+                    </div>
+                    <div class="chart-empty" id="scatterEmpty" hidden>
+                        <i class="bi bi-scatter"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 animate-in">
+            <div class="card h-100">
+                <div class="card-head">
+                    <h3 class="card-title"><i class="bi bi-graph-up"></i>Engagement Trend</h3>
+                    <span class="card-note">By publication date</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-shell chart-shell-sm">
+                        <canvas id="trendChart" data-chart="line" data-source="chart-trend" data-empty="trendEmpty"
+                                role="img" aria-label="Line chart of engagement rate over time"></canvas>
+                    </div>
+                    <div class="chart-empty" id="trendEmpty" hidden>
+                        <i class="bi bi-graph-up"></i>
+                        <p>No engagement data available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-// 1. Engagement Rate by Video - Bar Chart
-const engagementCtx = document.getElementById('engagementChart');
-if (engagementCtx) {
-    new Chart(engagementCtx, {
-        type: 'bar',
-        data: {
-            labels: {{ chart_engagement.labels|safe }},
-            datasets: [{
-                label: 'Engagement Rate (%)',
-                data: {{ chart_engagement.data|safe }},
-                backgroundColor: colors.primaryLight,
-                borderColor: colors.primary,
-                borderWidth: 2,
-                borderRadius: 8,
-                borderSkipped: false,
-                maxBarThickness: 48,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 12,
-                    cornerRadius: 8,
-                    callbacks: {
-                        label: function(context) {
-                            return `Engagement Rate: ${context.raw.toFixed(2)}%`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Engagement Rate (%)', font: { size: 12, weight: '500' } },
-                    grid: { color: colors.border, drawBorder: false },
-                    ticks: { font: { size: 11 } }
-                },
-                x: {
-                    grid: { display: false, drawBorder: false },
-                    ticks: { maxRotation: 45, minRotation: 45, font: { size: 11 } }
-                }
-            },
-            interaction: { intersect: false, mode: 'index' }
-        }
-    });
-}
+    <!-- Recent analyses -->
+    <div class="card animate-in">
+        <div class="card-head">
+            <h3 class="card-title"><i class="bi bi-clock-history"></i>Recent Analyses</h3>
+            <a href="{% url 'analytics:history' %}" class="btn btn-ghost btn-sm"><i class="bi bi-arrow-right"></i>View all history</a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 34%;">Video</th>
+                            <th style="width: 18%;">Channel</th>
+                            <th class="num" style="width: 10%;">Views</th>
+                            <th class="num" style="width: 10%;">Likes</th>
+                            <th class="num" style="width: 11%;">Comments</th>
+                            <th style="width: 12%;">Engagement Rate</th>
+                            <th>Analyzed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for video in dashboard_data.recent_videos %}
+                        <tr>
+                            <td>
+                                <div class="cell-media">
+                                    <img src="https://img.youtube.com/vi/{{ video.video_id }}/mqdefault.jpg" alt="" loading="lazy">
+                                    <div style="min-width: 0;">
+                                        <a class="cell-title" href="{% url 'analytics:video_detail' video.video_id %}">{{ video.title }}</a>
+                                        <span class="cell-sub">{{ video.duration|default:"—" }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <a class="text-decoration-none" style="color: var(--text-secondary); font-weight: 500; font-size: 0.85rem;"
+                                   href="{% url 'analytics:channel_detail' video.channel.channel_id %}">{{ video.channel.channel_name|truncatechars:28 }}</a>
+                            </td>
+                            <td class="num cell-num">{{ video.views|abbreviate_number }}</td>
+                            <td class="num cell-num">{{ video.likes|abbreviate_number }}</td>
+                            <td class="num cell-num">{{ video.comments|abbreviate_number }}</td>
+                            <td>
+                                {% if video.engagement_analysis %}
+                                    <span class="badge-er">{{ video.engagement_analysis.engagement_rate|floatformat:2 }}%</span>
+                                {% else %}
+                                    <span class="badge-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td style="white-space: nowrap; color: var(--text-secondary); font-size: 0.8rem;">{{ video.fetched_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endif %}
 
-// 2. Views vs Engagement - Scatter Chart
-const viewsCtx = document.getElementById('viewsVsEngagementChart');
-if (viewsCtx) {
-    const scatterData = {{ chart_views_vs_engagement|safe }};
-    new Chart(viewsCtx, {
-        type: 'scatter',
-        data: {
-            datasets: [{
-                label: 'Videos',
-                data: scatterData.map(d => ({ x: d.x, y: d.y })),
-                backgroundColor: colors.secondary,
-                borderColor: 'rgba(6, 182, 212, 1)',
-                pointRadius: 7,
-                pointHoverRadius: 10,
-                pointBorderWidth: 2,
-                pointBorderColor: '#fff',
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 12,
-                    cornerRadius: 8,
-                    callbacks: {
-                        label: function(context) {
-                            const point = scatterData[context.dataIndex];
-                            return [
-                                `Video: ${point.label}`,
-                                `Views: ${point.x.toLocaleString()}`,
-                                `Engagement Rate: ${context.raw.y.toFixed(2)}%`
-                            ];
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    type: 'logarithmic',
-                    title: { display: true, text: 'Views (log scale)', font: { size: 12, weight: '500' } },
-                    grid: { color: colors.border, drawBorder: false },
-                    ticks: { font: { size: 11 } }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Engagement Rate (%)', font: { size: 12, weight: '500' } },
-                    grid: { color: colors.border, drawBorder: false },
-                    ticks: { font: { size: 11 } }
-                }
-            },
-            interaction: { intersect: false, mode: 'nearest' }
-        }
-    });
-}
-
-// 3. Engagement Composition - Doughnut Chart
-const compositionCtx = document.getElementById('compositionChart');
-if (compositionCtx) {
-    new Chart(compositionCtx, {
-        type: 'doughnut',
-        data: {
-            labels: {{ chart_composition.labels|safe }},
-            datasets: [{
-                data: {{ chart_composition.data|safe }},
-                backgroundColor: [colors.primary, colors.secondary],
-                borderColor: ['rgba(79, 70, 229, 1)', 'rgba(6, 182, 212, 1)'],
-                borderWidth: 3,
-                borderRadius: 4,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 12,
-                    cornerRadius: 8,
-                    callbacks: {
-                        label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const pct = ((context.raw / total) * 100).toFixed(1);
-                            return `${context.label}: ${context.raw.toLocaleString()} (${pct}%)`;
-                        }
-                    }
-                }
-            },
-            cutout: '65%',
-            layout: { padding: 16 }
-        }
-    });
-}
-
-// 4. Engagement Trend - Line Chart
-const trendCtx = document.getElementById('trendChart');
-if (trendCtx) {
-    new Chart(trendCtx, {
-        type: 'line',
-        data: {
-            labels: {{ chart_trend.labels|safe }},
-            datasets: [{
-                label: 'Engagement Rate (%)',
-                data: {{ chart_trend.data|safe }},
-                fill: true,
-                backgroundColor: 'rgba(79, 70, 229, 0.08)',
-                borderColor: colors.primary,
-                borderWidth: 3,
-                tension: 0.4,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                pointBackgroundColor: '#fff',
-                pointBorderColor: colors.primary,
-                pointBorderWidth: 2,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 12,
-                    cornerRadius: 8,
-                    callbacks: {
-                        label: function(context) {
-                            return `Engagement Rate: ${context.raw.toFixed(2)}%`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Engagement Rate (%)', font: { size: 12, weight: '500' } },
-                    grid: { color: colors.border, drawBorder: false },
-                    ticks: { font: { size: 11 } }
-                },
-                x: {
-                    grid: { color: colors.border, drawBorder: false },
-                    ticks: { font: { size: 11 } }
-                }
-            },
-            interaction: { intersect: false, mode: 'index' }
-        }
-    });
-}
-</script>
+{{ chart_engagement|json_script:"chart-engagement" }}
+{{ chart_views_vs_engagement|json_script:"chart-scatter" }}
+{{ chart_composition|json_script:"chart-composition" }}
+{{ chart_trend|json_script:"chart-trend" }}
 {% endblock %}

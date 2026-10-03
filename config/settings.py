@@ -86,3 +86,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+
+LOGIN_URL = 'analytics:login'
+LOGIN_REDIRECT_URL = 'analytics:dashboard'
+LOGOUT_REDIRECT_URL = 'analytics:home'

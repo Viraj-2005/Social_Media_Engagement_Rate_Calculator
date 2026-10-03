@@ -1,8 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django import forms
+from django.contrib.auth.models import User
 from analytics.forms import VideoAnalysisForm, ChannelAnalysisForm
 from analytics.models import Channel, Video, EngagementAnalysis
 from analytics.services import youtube_api, calculator, analytics as analytics_service, insights
@@ -12,11 +17,99 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class SignUpForm(forms.ModelForm):
+    password1 = forms.CharField(label='Password', widget=forms.PasswordInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'Enter password'
+    }))
+    password2 = forms.CharField(label='Confirm Password', widget=forms.PasswordInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'Confirm password'
+    }))
+
+    class Meta:
+        model = User
+        fields = ['username', 'email']
+        widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Choose a username'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter your email'
+            }),
+        }
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Passwords don't match")
+        return password2
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password1'])
+        if commit:
+            user.save()
+        return user
+
+
+class SignInForm(AuthenticationForm):
+    username = forms.CharField(
+        label='Username',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Choose a username',
+            'autofocus': True,
+            'autocomplete': 'username'
+        })
+    )
+    password = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter password',
+            'autocomplete': 'current-password'
+        })
+    )
+
+
+class PasswordResetForm(forms.Form):
+    email = forms.EmailField(
+        label='Email',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your email',
+            'autocomplete': 'email'
+        })
+    )
+
+
 def home(request):
     """Home page with project introduction and analysis options."""
     return render(request, 'home.html')
 
 
+def signup(request):
+    """User registration."""
+    if request.user.is_authenticated:
+        return redirect('analytics:dashboard')
+    
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'Account created successfully!')
+            return redirect('analytics:dashboard')
+    else:
+        form = SignUpForm()
+    return render(request, 'registration/signup.html', {'form': form})
+
+
+@login_required
 def video_analysis(request):
     """Handle video URL submission and display results."""
     form = VideoAnalysisForm()
@@ -39,6 +132,7 @@ def video_analysis(request):
     return render(request, 'video_analysis.html', {'form': form})
 
 
+@login_required
 def channel_analysis(request):
     """Handle channel URL submission and display results."""
     form = ChannelAnalysisForm()
@@ -190,6 +284,7 @@ def analyze_channel(identifier: tuple, max_videos: int = 20) -> Channel:
     return channel
 
 
+@login_required
 def dashboard(request):
     """Main dashboard with summary cards and charts."""
     dashboard_data = analytics_service.get_dashboard_data()
@@ -211,6 +306,54 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 
+@login_required
+def video_dashboard(request):
+    """Video-focused dashboard with summary cards and charts."""
+    dashboard_data = analytics_service.get_video_dashboard_data()
+
+    # Get recent videos for charts
+    recent_videos = Video.objects.select_related('channel', 'engagement_analysis').order_by('-fetched_at')[:10]
+
+    chart_engagement = analytics_service.get_chart_data_engagement_by_video(recent_videos)
+    chart_views_vs_engagement = analytics_service.get_chart_data_views_vs_engagement(recent_videos)
+    chart_composition = analytics_service.get_chart_data_engagement_composition(recent_videos)
+    chart_trend = analytics_service.get_chart_data_engagement_trend(recent_videos)
+
+    context = {
+        'dashboard_data': dashboard_data,
+        'chart_engagement': chart_engagement,
+        'chart_views_vs_engagement': chart_views_vs_engagement,
+        'chart_composition': chart_composition,
+        'chart_trend': chart_trend,
+    }
+    return render(request, 'dashboard_videos.html', context)
+
+
+@login_required
+def channel_dashboard(request):
+    """Channel-focused dashboard with summary cards and charts."""
+    dashboard_data = analytics_service.get_channel_dashboard_data()
+
+    # Get channels with videos for charts
+    channels_with_videos = Channel.objects.filter(videos__isnull=False).distinct()
+    channel_videos = Video.objects.filter(channel__in=channels_with_videos).select_related('channel', 'engagement_analysis')
+
+    chart_engagement = analytics_service.get_chart_data_engagement_by_video(channel_videos[:20])
+    chart_views_vs_engagement = analytics_service.get_chart_data_views_vs_engagement(channel_videos[:20])
+    chart_composition = analytics_service.get_chart_data_engagement_composition(channel_videos[:20])
+    chart_trend = analytics_service.get_chart_data_engagement_trend(channel_videos[:20])
+
+    context = {
+        'dashboard_data': dashboard_data,
+        'chart_engagement': chart_engagement,
+        'chart_views_vs_engagement': chart_views_vs_engagement,
+        'chart_composition': chart_composition,
+        'chart_trend': chart_trend,
+    }
+    return render(request, 'dashboard_channels.html', context)
+
+
+@login_required
 def history(request):
     """History page showing previously analyzed videos."""
     videos = Video.objects.select_related('channel', 'engagement_analysis').order_by('-fetched_at')
@@ -229,6 +372,7 @@ def history(request):
     return render(request, 'history.html', context)
 
 
+@login_required
 def video_detail(request, video_id):
     """Detail view for a single video analysis."""
     video = get_object_or_404(Video.objects.select_related('channel', 'engagement_analysis'), video_id=video_id)
@@ -243,6 +387,7 @@ def video_detail(request, video_id):
     return render(request, 'video_detail.html', context)
 
 
+@login_required
 def channel_detail(request, channel_id):
     """Detail view for a channel analysis."""
     channel = get_object_or_404(Channel, channel_id=channel_id)

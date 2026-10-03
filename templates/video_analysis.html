@@ -1,160 +1,82 @@
 {% extends 'base.html' %}
 
-{% block title %}Analyze Video - Social Media Engagement Rate Calculator{% endblock %}
+{% block title %}Analyze Video · EngageRate{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-xl-8 col-lg-9">
-        <!-- Main Form Card -->
-        <div class="card mb-5 animate-in">
-            <div class="card-header">
-                <h5 class="card-title"><i class="bi bi-youtube text-danger"></i> Analyze YouTube Video</h5>
-            </div>
-            <div class="card-body">
-                <form method="post" id="videoAnalysisForm">
-                    {% csrf_token %}
-                    <div class="mb-4">
-                        <label for="{{ form.video_url.id_for_label }}" class="form-label">{{ form.video_url.label }}</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                            {{ form.video_url }}
-                        </div>
-                        {% if form.video_url.help_text %}
-                            <div class="form-text">{{ form.video_url.help_text }}</div>
-                        {% endif %}
-                        {% if form.video_url.errors %}
-                            <div class="text-danger small mt-1">{{ form.video_url.errors }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg btn-icon" id="analyzeBtn">
-                            <i class="bi bi-search"></i> Analyze Video
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <div class="col-xl-8 col-lg-10">
+        <!-- Header -->
+        <div class="text-center mb-4 animate-in">
+            <span class="hero-badge">Video Analysis</span>
+            <h1 class="page-title">Analyze YouTube Video</h1>
+            <p class="page-subtitle mx-auto" style="max-width: 520px;">Enter a public YouTube video URL to calculate engagement metrics from live YouTube Data API stats.</p>
         </div>
 
-        <!-- Supported Formats -->
-        <div class="row g-4 mb-5">
-            <div class="col-md-6 animate-in stagger-1">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h6 class="card-title mb-0"><i class="bi bi-link"></i> Supported URL Formats</h6>
+        <!-- Form -->
+        <div class="form-card animate-in stagger-1">
+            <form method="post" data-analyze="Analyzing video" novalidate>
+                {% csrf_token %}
+                <div class="field">
+                    <label for="{{ form.video_url.id_for_label }}" class="form-label">YouTube Video URL</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-youtube"></i></span>
+                        {{ form.video_url }}
                     </div>
-                    <div class="card-body">
-                        <ul class="mb-0 list-unstyled">
-                            <li class="mb-2"><code class="bg-tertiary px-2 py-1 rounded">https://www.youtube.com/watch?v=VIDEO_ID</code></li>
-                            <li class="mb-2"><code class="bg-tertiary px-2 py-1 rounded">https://youtu.be/VIDEO_ID</code></li>
-                            <li class="mb-2"><code class="bg-tertiary px-2 py-1 rounded">https://www.youtube.com/embed/VIDEO_ID</code></li>
-                            <li><code class="bg-tertiary px-2 py-1 rounded">VIDEO_ID</code> (11-character ID only)</li>
-                        </ul>
-                        <p class="text-muted small mb-0 mt-3">The video ID is the 11-character code (e.g., <code class="bg-tertiary px-2 py-1 rounded">dQw4w9WgXcQ</code>).</p>
-                    </div>
+                    {% if form.video_url.help_text %}
+                        <div class="form-text">{{ form.video_url.help_text }}</div>
+                    {% endif %}
+                    {% if form.video_url.errors %}
+                        <div class="form-error" role="alert">{{ form.video_url.errors.0 }}</div>
+                    {% endif %}
                 </div>
-            </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100" id="analyzeBtn">
+                    <i class="bi bi-graph-up"></i>Analyze Video
+                </button>
+            </form>
+        </div>
 
+        <!-- Supported formats -->
+        <div class="row g-4 mt-4">
             <div class="col-md-6 animate-in stagger-2">
                 <div class="card h-100">
-                    <div class="card-header">
-                        <h6 class="card-title mb-0"><i class="bi bi-graph-up"></i> What You'll Get</h6>
+                    <div class="card-head">
+                        <h3 class="card-title"><i class="bi bi-link-45deg"></i>Supported URL Formats</h3>
                     </div>
                     <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <div class="stat-card h-100">
-                                    <div class="stat-icon primary"><i class="bi bi-graph-up"></i></div>
-                                    <div class="stat-value">ER</div>
-                                    <div class="stat-label">Engagement Rate</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="stat-card h-100">
-                                    <div class="stat-icon success"><i class="bi bi-hand-thumbs-up"></i></div>
-                                    <div class="stat-value">LR</div>
-                                    <div class="stat-label">Like Rate</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="stat-card h-100">
-                                    <div class="stat-icon info"><i class="bi bi-chat"></i></div>
-                                    <div class="stat-value">CR</div>
-                                    <div class="stat-label">Comment Rate</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="stat-card h-100">
-                                    <div class="stat-icon warning"><i class="bi bi-bar-chart"></i></div>
-                                    <div class="stat-value">TE</div>
-                                    <div class="stat-label">Total Engagement</div>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="text-muted small mb-0 mt-3">Plus interactive charts, AI insights, and detailed video metadata.</p>
+                        <ul class="info-list">
+                            <li><i class="bi bi-check2"></i><code>youtube.com/watch?v=VIDEO_ID</code></li>
+                            <li><i class="bi bi-check2"></i><code>youtu.be/VIDEO_ID</code></li>
+                            <li><i class="bi bi-check2"></i><code>youtube.com/embed/VIDEO_ID</code></li>
+                            <li><i class="bi bi-check2"></i>A bare 11-character video ID</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 animate-in stagger-3">
+                <div class="card h-100">
+                    <div class="card-head">
+                        <h3 class="card-title"><i class="bi bi-graph-up"></i>What You'll Get</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="info-list">
+                            <li><i class="bi bi-pie-chart"></i>Engagement rate, like rate &amp; comment rate</li>
+                            <li><i class="bi bi-bar-chart"></i>Interactive charts and visual breakdowns</li>
+                            <li><i class="bi bi-lightbulb"></i>Rule-based performance insights</li>
+                            <li><i class="bi bi-clock-history"></i>Full analysis history &amp; re-visits</li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Recent Videos Preview -->
-        {% if recent_videos %}
-        <div class="card animate-in stagger-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title"><i class="bi bi-clock-history"></i> Recent Analyses</h5>
-                <a href="{% url 'analytics:history' %}" class="btn btn-sm btn-outline-primary">View All</a>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Video</th>
-                                <th>Channel</th>
-                                <th>Views</th>
-                                <th>Likes</th>
-                                <th>Comments</th>
-                                <th>Engagement Rate</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for video in recent_videos %}
-                            <tr>
-                                <td>
-                                    <a href="{% url 'analytics:video_detail' video.video_id %}" class="text-decoration-none fw-medium">
-                                        {{ video.title|truncatechars:50 }}
-                                    </a>
-                                </td>
-                                <td>{{ video.channel.channel_name|truncatechars:20 }}</td>
-                                <td>{{ video.views|floatformat:0 }}</td>
-                                <td>{{ video.likes|floatformat:0 }}</td>
-                                <td>{{ video.comments|floatformat:0 }}</td>
-                                <td>
-                                    {% if video.engagement_analysis %}
-                                        <span class="badge badge-primary">{{ video.engagement_analysis.engagement_rate|floatformat:2 }}%</span>
-                                    {% else %}
-                                        <span class="text-muted">N/A</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-muted small">{{ video.fetched_at|date:"M d, Y" }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-document.getElementById('videoAnalysisForm').addEventListener('submit', function(e) {
-    const btn = document.getElementById('analyzeBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Analyzing...';
-});
-</script>
+<!-- Loading overlay -->
+<div class="loading-overlay" data-loading-overlay hidden aria-busy="true">
+    <div class="loading-card">
+        <div class="spinner" role="status" aria-label="Loading"></div>
+        <p class="loading-title" data-loading-title>Analyzing video…</p>
+        <p class="loading-sub">Fetching metrics from the YouTube API. This usually takes a few seconds.</p>
+    </div>
+</div>
 {% endblock %}

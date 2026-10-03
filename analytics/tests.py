@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse
+from django.contrib.auth.models import User
 from unittest.mock import patch, MagicMock
 
 from analytics.models import Channel, Video, EngagementAnalysis
@@ -188,10 +189,18 @@ class ModelTests(TestCase):
 class ViewTests(TestCase):
     """Tests for Django views."""
 
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.client.login(username='testuser', password='testpass123')
+
     def test_home_view(self):
         response = self.client.get(reverse('analytics:home'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Engagement Rate Calculator')
+        self.assertContains(response, 'EngageRate')
 
     def test_video_analysis_get(self):
         response = self.client.get(reverse('analytics:video_analysis'))
@@ -215,6 +224,20 @@ class ViewTests(TestCase):
         response = self.client.post(reverse('analytics:video_analysis'), {'video_url': 'invalid'})
         self.assertEqual(response.status_code, 200)
         # Form should show error
+
+    def test_unauthenticated_redirect(self):
+        """Test that unauthenticated users are redirected to login."""
+        self.client.logout()
+        urls = [
+            'analytics:video_analysis',
+            'analytics:channel_analysis',
+            'analytics:dashboard',
+            'analytics:history',
+        ]
+        for url_name in urls:
+            response = self.client.get(reverse(url_name))
+            self.assertEqual(response.status_code, 302)
+            self.assertIn('/login/', response.url)
 
 
 class YouTubeAPIMockTests(TestCase):

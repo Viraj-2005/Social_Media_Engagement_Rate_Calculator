@@ -1,4 +1,7 @@
 .env
+# Secrets - never commit
+API_Key.txt
+credentials.json
 __pycache__/
 *.pyc
 *.pyo
