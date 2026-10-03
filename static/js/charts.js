@@ -283,7 +283,6 @@
                                 if (!p) return '';
                                 var rows = ['Views:  ' + fmtFull(p.views != null ? p.views : p.x)];
                                 if (p.likes != null) rows.push('Likes:  ' + fmtFull(p.likes));
-                                if (p.comments != null) rows.push('Comments:  ' + fmtFull(p.comments));
                                 rows.push('Engagement rate:  ' + fmtPct(p.engagement_rate != null ? p.engagement_rate : ctx.raw.y));
                                 return rows;
                             }
@@ -310,12 +309,6 @@
         }));
         return chart;
     }
-                if (p.comments != null) rows.push('Comments:  ' + fmtFull(p.comments));
-
-    /* ============================================================
-       4. Engagement Trend — line chart over publication dates
-       data: { labels: ['YYYY-MM-DD', ..], data: [..], tooltips: [{title, published_date, engagement_rate, views}] }
-       ============================================================ */
     function trend(canvas, d, t) {
         t = t || themeColors();
         d = d || {};
